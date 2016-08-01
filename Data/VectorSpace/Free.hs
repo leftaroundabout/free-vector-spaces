@@ -30,18 +30,20 @@ import Linear.V3
 import Linear.V4
 
 
-#define portFinDV(v)                         \
-instance Num s => AffineSpace (v s) where {   \
-  type Diff (v s) = v s;                       \
-  (.-.) = (L.^-^);                              \
-  (.+^) = (L.^+^) };                             \
-instance Num s => AdditiveGroup (v s) where {     \
-  zeroV = L.zero;                                  \
-  (^+^) = (L.^+^);                                  \
-  negateV = L.negated };                             \
-instance Num s => VectorSpace (v s) where {           \
-  type Scalar (v s) = s;                               \
-  (*^) = (L.*^) }
+#define portFinDV(v)                              \
+instance Num s => AffineSpace (v s) where {        \
+  type Diff (v s) = v s;                            \
+  (.-.) = (L.^-^);                                   \
+  (.+^) = (L.^+^) };                                  \
+instance Num s => AdditiveGroup (v s) where {          \
+  zeroV = L.zero;                                       \
+  (^+^) = (L.^+^);                                       \
+  negateV = L.negated };                                  \
+instance Num s => VectorSpace (v s) where {                \
+  type Scalar (v s) = s;                                    \
+  (*^) = (L.*^) };                                           \
+instance (Num s, AdditiveGroup s) => InnerSpace (v s) where { \
+  (<.>) = L.dot }
 
 portFinDV(V0)
 portFinDV(V1)
