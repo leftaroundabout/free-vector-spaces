@@ -33,6 +33,7 @@ import Linear.V1
 import Linear.V2
 import Linear.V3
 import Linear.V4
+import qualified Linear.Affine as LA
 
 import Control.Lens
 
@@ -64,6 +65,18 @@ portFinDV(V1)
 portFinDV(V2)
 portFinDV(V3)
 portFinDV(V4)
+
+#define portFinDP(v)                                 \
+instance Num s => AffineSpace (LA.Point v s) where {  \
+  type Diff (LA.Point v s) = v s;                      \
+  (.-.) = (LA..-.);                                     \
+  (.+^) = (LA..+^) }
+
+portFinDP(V0)
+portFinDP(V1)
+portFinDP(V2)
+portFinDP(V3)
+portFinDP(V4)
 
 
 instance HasTrie (L.E V0) where
