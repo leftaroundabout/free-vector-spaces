@@ -7,8 +7,9 @@
 -- Stability   : experimental
 -- Portability : portable
 -- 
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE CPP          #-}
+{-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP              #-}
 
 module Data.VectorSpace.Free ( module Linear.V0
                              , module Linear.V1
@@ -21,6 +22,7 @@ module Data.VectorSpace.Free ( module Linear.V0
 
 import Data.AffineSpace
 import Data.VectorSpace
+import Data.Basis
 
 import qualified Linear as L
 import Linear.V0
@@ -29,6 +31,10 @@ import Linear.V2
 import Linear.V3
 import Linear.V4
 
+import Control.Lens
+
+vDecomp :: FoldableWithIndex (L.E v) v => v s -> [(L.E v, s)]
+vDecomp = ifoldr (\b s l -> (b,s):l) []
 
 #define portFinDV(v)                              \
 instance Num s => AffineSpace (v s) where {        \
@@ -43,7 +49,12 @@ instance Num s => VectorSpace (v s) where {                \
   type Scalar (v s) = s;                                    \
   (*^) = (L.*^) };                                           \
 instance (Num s, AdditiveGroup s) => InnerSpace (v s) where { \
-  (<.>) = L.dot }
+  (<.>) = L.dot };                                             \
+instance (Num s, AdditiveGroup s) => HasBasis (v s) where {     \
+  type Basis (v s) = L.E v;                                      \
+  decompose = vDecomp;                                            \
+  basisValue = L.unit . L.el;                                      \
+  decompose' w (L.E le) = w^.le }
 
 portFinDV(V0)
 portFinDV(V1)
