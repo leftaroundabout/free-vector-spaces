@@ -10,10 +10,12 @@ description:         The <http://hackage.haskell.org/package/linear/ linear> pac
                      this  concept of free vectors with a canonical coordinate representation.
                      .
                      While this is practically speaking often useful, it is also
+                     .
                      * Questionable in terms of conceptual elegance. The idea of a vector has
                        originally not much to do with number-arrays; in physics a vector is just
                        a quantity with /magnitude and direction/. Only by fixing a basis can
                        a coordinate representation arise from that.
+                     .
                      * Not as safe as we'd like. The typical linear-algebra languages like Matlab
                        or Fortran are notorious for hard-to spot mistakes that often arise from the 
                        total reliance on coordinate representations (every vector/linear map is just

@@ -12,13 +12,16 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE CPP               #-}
 
-module Data.VectorSpace.Free ( module Linear.V0
-                             , module Linear.V1
-                             , module Linear.V2
-                             , module Linear.V3
-                             , module Linear.V4
+module Data.VectorSpace.Free (
+                             -- * Supported types
+                               V0
+                             , V1
+                             , V2
+                             , V3
+                             , V4
+                             -- * The vector-space type classes
                              , AffineSpace(..), AdditiveGroup(..)
-                             , VectorSpace(..), InnerSpace(..) 
+                             , VectorSpace(..), InnerSpace(..), HasBasis(..)
                              ) where
 
 import Data.AffineSpace
