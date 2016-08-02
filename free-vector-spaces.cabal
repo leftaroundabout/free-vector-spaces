@@ -46,6 +46,7 @@ library
   -- other-extensions:    
   build-depends:       base >=4.6 && <5.1,
                        vector-space >=0.8 && <0.13,
+                       MemoTrie,
                        linear >=1.18 && <1.23,
                        lens >= 4 && < 5
   -- hs-source-dirs:      

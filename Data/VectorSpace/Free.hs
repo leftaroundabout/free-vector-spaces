@@ -7,9 +7,10 @@
 -- Stability   : experimental
 -- Portability : portable
 -- 
-{-# LANGUAGE TypeFamilies     #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE CPP              #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE CPP               #-}
 
 module Data.VectorSpace.Free ( module Linear.V0
                              , module Linear.V1
@@ -23,6 +24,8 @@ module Data.VectorSpace.Free ( module Linear.V0
 import Data.AffineSpace
 import Data.VectorSpace
 import Data.Basis
+
+import Data.MemoTrie
 
 import qualified Linear as L
 import Linear.V0
@@ -61,3 +64,30 @@ portFinDV(V1)
 portFinDV(V2)
 portFinDV(V3)
 portFinDV(V4)
+
+
+instance HasTrie (L.E V0) where
+  newtype L.E V0 :->: a = V0T (V0 a)
+  trie f = V0T V0
+  untrie (V0T v) (L.E i) = v^.i
+  enumerate (V0T V0) = []
+instance HasTrie (L.E V1) where
+  newtype L.E V1 :->: a = V1T (V1 a)
+  trie f = V1T $ V1 (f L.ex)
+  untrie (V1T v) (L.E i) = v^.i
+  enumerate (V1T (V1 x)) = [(L.ex, x)]
+instance HasTrie (L.E V2) where
+  newtype L.E V2 :->: a = V2T (V2 a)
+  trie f = V2T $ V2 (f L.ex) (f L.ey)
+  untrie (V2T v) (L.E i) = v^.i
+  enumerate (V2T (V2 x y)) = [(L.ex, x), (L.ey, y)]
+instance HasTrie (L.E V3) where
+  newtype L.E V3 :->: a = V3T (V3 a)
+  trie f = V3T $ V3 (f L.ex) (f L.ey) (f L.ez)
+  untrie (V3T v) (L.E i) = v^.i
+  enumerate (V3T (V3 x y z)) = [(L.ex, x), (L.ey, y), (L.ez, z)]
+instance HasTrie (L.E V4) where
+  newtype L.E V4 :->: a = V4T (V4 a)
+  trie f = V4T $ V4 (f L.ex) (f L.ey) (f L.ez) (f L.ew)
+  untrie (V4T v) (L.E i) = v^.i
+  enumerate (V4T (V4 x y z w)) = [(L.ex, x), (L.ey, y), (L.ez, z), (L.ew, w)]
