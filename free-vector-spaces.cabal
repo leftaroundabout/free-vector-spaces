@@ -54,7 +54,8 @@ library
                        vector-space >=0.8 && <0.13,
                        MemoTrie,
                        linear >=1.18 && <1.23,
-                       lens >= 4 && < 5
+                       lens >= 4 && < 5,
+                       vector
   ghc-options:         -O2
   -- hs-source-dirs:      
   default-language:    Haskell2010

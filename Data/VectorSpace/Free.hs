@@ -7,10 +7,10 @@
 -- Stability   : experimental
 -- Portability : portable
 -- 
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE CPP                  #-}
 
 module Data.VectorSpace.Free (
                              -- * Supported types
@@ -39,6 +39,8 @@ import Linear.V4
 import qualified Linear.Affine as LA
 
 import Control.Lens
+
+import qualified Data.Vector.Unboxed as UArr
 
 vDecomp :: FoldableWithIndex (L.E v) v => v s -> [(L.E v, s)]
 vDecomp = ifoldr (\b s l -> (b,s):l) []
@@ -107,3 +109,33 @@ instance HasTrie (L.E V4) where
   trie f = V4T $ V4 (f L.ex) (f L.ey) (f L.ez) (f L.ew)
   untrie (V4T v) (L.E i) = v^.i
   enumerate (V4T (V4 x y z w)) = [(L.ex, x), (L.ey, y), (L.ez, z), (L.ew, w)]
+
+
+
+
+
+class (VectorSpace v, Num (Scalar v)) => FiniteFreeSpace v where
+  {-# MINIMAL freeDimension, toUnboxVect, unsafeFromFullUnboxVect #-}
+  freeDimension :: p v -> Int
+  toUnboxVect :: UArr.Unbox (Scalar v) => v -> UArr.Vector (Scalar v)
+  unsafeFromFullUnboxVect :: UArr.Vector (Scalar v) -> v
+  fromUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
+  fromUnboxVect v = result
+   where result = case UArr.length v of
+           0        -> zeroV
+           n | n<d  -> unsafeFromFullUnboxVect $ v UArr.++ UArr.replicate (d-n) 0
+         d = freeDimension [result]
+
+
+instance FiniteFreeSpace Int where
+  freeDimension _ = 1
+  toUnboxVect = UArr.singleton
+  unsafeFromFullUnboxVect v = UArr.unsafeIndex v 0
+instance FiniteFreeSpace Float where
+  freeDimension _ = 1
+  toUnboxVect = UArr.singleton
+  unsafeFromFullUnboxVect v = UArr.unsafeIndex v 0
+instance FiniteFreeSpace Double where
+  freeDimension _ = 1
+  toUnboxVect = UArr.singleton
+  unsafeFromFullUnboxVect v = UArr.unsafeIndex v 0
