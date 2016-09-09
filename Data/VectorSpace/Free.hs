@@ -14,14 +14,19 @@
 
 module Data.VectorSpace.Free (
                              -- * Supported types
+                             -- | These come from the <http://hackage.haskell.org/package/linear/ linear> package.
                                V0
                              , V1
                              , V2
                              , V3
                              , V4
                              -- * The vector-space type classes
+                             -- ** General
+                             -- | These come from the <http://hackage.haskell.org/package/vector-space/ vector-space> package.
                              , AffineSpace(..), AdditiveGroup(..)
                              , VectorSpace(..), InnerSpace(..), HasBasis(..)
+                             -- ** Free
+                             , FiniteFreeSpace(..)
                              ) where
 
 import Data.AffineSpace
@@ -115,10 +120,10 @@ instance HasTrie (L.E V4) where
 
 
 class (VectorSpace v, Num (Scalar v)) => FiniteFreeSpace v where
-  {-# MINIMAL freeDimension, toUnboxVect, unsafeFromFullUnboxVect #-}
-  freeDimension :: p v -> Int
-  toUnboxVect :: UArr.Unbox (Scalar v) => v -> UArr.Vector (Scalar v)
-  unsafeFromFullUnboxVect :: UArr.Vector (Scalar v) -> v
+  {-# MINIMAL freeDimension, toFullUnboxVect, unsafeFromFullUnboxVect #-}
+  freeDimension :: Functor p => p v -> Int
+  toFullUnboxVect :: UArr.Unbox (Scalar v) => v -> UArr.Vector (Scalar v)
+  unsafeFromFullUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
   fromUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
   fromUnboxVect v = result
    where result = case UArr.length v of
@@ -129,13 +134,49 @@ class (VectorSpace v, Num (Scalar v)) => FiniteFreeSpace v where
 
 instance FiniteFreeSpace Int where
   freeDimension _ = 1
-  toUnboxVect = UArr.singleton
+  toFullUnboxVect = UArr.singleton
   unsafeFromFullUnboxVect v = UArr.unsafeIndex v 0
 instance FiniteFreeSpace Float where
   freeDimension _ = 1
-  toUnboxVect = UArr.singleton
+  toFullUnboxVect = UArr.singleton
   unsafeFromFullUnboxVect v = UArr.unsafeIndex v 0
 instance FiniteFreeSpace Double where
   freeDimension _ = 1
-  toUnboxVect = UArr.singleton
+  toFullUnboxVect = UArr.singleton
   unsafeFromFullUnboxVect v = UArr.unsafeIndex v 0
+
+instance (FiniteFreeSpace u, FiniteFreeSpace v, Scalar u ~ Scalar v)
+      => FiniteFreeSpace (u,v) where
+  freeDimension puv = freeDimension (fmap fst puv) + freeDimension (fmap snd puv)
+  toFullUnboxVect (u,v) = toFullUnboxVect u UArr.++ toFullUnboxVect v
+  unsafeFromFullUnboxVect uv = (u,v)
+   where u = unsafeFromFullUnboxVect uv
+         v = unsafeFromFullUnboxVect $ UArr.drop du uv
+         du = freeDimension [u]
+
+instance Num s => FiniteFreeSpace (V0 s) where
+  freeDimension _ = 0
+  toFullUnboxVect _ = UArr.empty
+  unsafeFromFullUnboxVect _ = zeroV
+instance Num s => FiniteFreeSpace (V1 s) where
+  freeDimension _ = 1
+  toFullUnboxVect (V1 n) = UArr.singleton n
+  unsafeFromFullUnboxVect v = V1 $ UArr.unsafeIndex v 0
+instance Num s => FiniteFreeSpace (V2 s) where
+  freeDimension _ = 2
+  toFullUnboxVect (V2 x y) = UArr.fromListN 2 [x,y]
+  unsafeFromFullUnboxVect v = V2 (UArr.unsafeIndex v 0)
+                                 (UArr.unsafeIndex v 1)
+instance Num s => FiniteFreeSpace (V3 s) where
+  freeDimension _ = 3
+  toFullUnboxVect (V3 x y z) = UArr.fromListN 3 [x,y,z]
+  unsafeFromFullUnboxVect v = V3 (UArr.unsafeIndex v 0)
+                                 (UArr.unsafeIndex v 1)
+                                 (UArr.unsafeIndex v 2)
+instance Num s => FiniteFreeSpace (V4 s) where
+  freeDimension _ = 4
+  toFullUnboxVect (V4 x y z w) = UArr.fromListN 3 [x,y,z,w]
+  unsafeFromFullUnboxVect v = V4 (UArr.unsafeIndex v 0)
+                                 (UArr.unsafeIndex v 1)
+                                 (UArr.unsafeIndex v 2)
+                                 (UArr.unsafeIndex v 3)
