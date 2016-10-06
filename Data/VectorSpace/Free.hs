@@ -7,10 +7,11 @@
 -- Stability   : experimental
 -- Portability : portable
 -- 
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE CPP                     #-}
+{-# LANGUAGE ConstrainedClassMethods #-}
 
 module Data.VectorSpace.Free (
                              -- * Supported types
