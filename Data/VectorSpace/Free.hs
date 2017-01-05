@@ -26,6 +26,8 @@ module Data.VectorSpace.Free (
                              -- | These come from the <http://hackage.haskell.org/package/vector-space/ vector-space> package.
                              , AffineSpace(..), AdditiveGroup(..)
                              , VectorSpace(..), InnerSpace(..), HasBasis(..)
+                             -- ** Small
+                             , OneDimensional(..)
                              -- ** Free
                              , FiniteFreeSpace(..)
                              ) where
@@ -47,6 +49,9 @@ import qualified Linear.Affine as LA
 import Control.Lens
 
 import qualified Data.Vector.Unboxed as UArr
+
+import Data.Ratio
+import Foreign.C.Types (CFloat, CDouble)
 
 vDecomp :: FoldableWithIndex (L.E v) v => v s -> [(L.E v, s)]
 vDecomp = ifoldr (\b s l -> (b,s):l) []
@@ -117,6 +122,41 @@ instance HasTrie (L.E V4) where
   enumerate (V4T (V4 x y z w)) = [(L.ex, x), (L.ey, y), (L.ez, z), (L.ew, w)]
 
 
+infixr 7 ^/^, ^/!
+
+class (VectorSpace v, Fractional (Scalar v)) => OneDimensional v where
+  -- | Compare the (directed) length of two vectors.
+  (^/^) :: v -> v -> Maybe (Scalar v)
+  -- | Unsafe version of '^/^'.
+  (^/!) :: v -> v -> Scalar v
+  v^/!w = case v^/^w of
+       Just μ  -> μ
+       Nothing -> 1/0
+
+instance OneDimensional Float where
+  _^/^0 = Nothing
+  x^/^y = Just $ x/y
+  x^/!y = x/y
+instance OneDimensional Double where
+  _^/^0 = Nothing
+  x^/^y = Just $ x/y
+  x^/!y = x/y
+instance OneDimensional CFloat where
+  _^/^0 = Nothing
+  x^/^y = Just $ x/y
+  x^/!y = x/y
+instance OneDimensional CDouble where
+  _^/^0 = Nothing
+  x^/^y = Just $ x/y
+  x^/!y = x/y
+instance Integral i => OneDimensional (Ratio i) where
+  _^/^0 = Nothing
+  x^/^y = Just $ x/y
+  x^/!y = x/y
+instance (Eq r, Fractional r) => OneDimensional (V1 r) where
+  _^/^V1 0 = Nothing
+  V1 x^/^V1 y = Just $ x/y
+  V1 x^/!V1 y = x/y
 
 
 
