@@ -19,8 +19,7 @@ module Data.VectorSpace.Free.FiniteSupportedSequence (
 
 import Data.AffineSpace
 import Data.VectorSpace
-
-import Control.Lens ((^.), FoldableWithIndex, ifoldr)
+import Data.Basis
 
 import qualified Data.Foldable as Foldable
 
@@ -93,6 +92,12 @@ instance (Num n, UArr.Unbox n) => VectorSpace (FinSuppSeq n) where
   
 instance (Num n, AdditiveGroup n, UArr.Unbox n) => InnerSpace (FinSuppSeq n) where
   FinSuppSeq v<.>FinSuppSeq w = UArr.sum (UArr.zipWith (*) v w)
+
+instance (Num n, UArr.Unbox n) => HasBasis (FinSuppSeq n) where
+  type Basis (FinSuppSeq n) = Int
+  basisValue i = FinSuppSeq $ UArr.replicate i 0 `UArr.snoc` 1
+  decompose = zip [0..] . toList
+  decompose' (FinSuppSeq v) i = maybe 0 id $ v UArr.!? i
 
 instance UArr.Unbox n => IsList (FinSuppSeq n) where
   type Item (FinSuppSeq n) = n
