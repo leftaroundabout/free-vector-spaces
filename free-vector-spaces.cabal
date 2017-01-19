@@ -49,6 +49,7 @@ source-repository head
 library
   exposed-modules:     Data.VectorSpace.Free
                        , Data.VectorSpace.Free.FiniteSupportedSequence
+                       , Data.VectorSpace.Free.Sequence
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.6 && <5.1,
