@@ -77,12 +77,11 @@ liftU2FSS f (FinSuppSeq u) (FinSuppSeq v) = FinSuppSeq $ case compare lu lv of
 
 instance (Num n, UArr.Unbox n) => AffineSpace (FinSuppSeq n) where
   type Diff (FinSuppSeq n) = FinSuppSeq n
-  (.-.) = liftU2FSS (-)
-  (.+^) = liftU2FSS (+)
+  (.-.) = (^-^)
+  (.+^) = (^+^)
   
 instance (Num n, UArr.Unbox n) => AdditiveGroup (FinSuppSeq n) where
   zeroV = FinSuppSeq $ UArr.empty
-  (^-^) = liftU2FSS (-)
   (^+^) = liftU2FSS (+)
   negateV (FinSuppSeq v) = FinSuppSeq $ UArr.map negate v
   
