@@ -207,7 +207,12 @@ instance (UArr.Unbox n, Num n) => IsList (Sequence n) where
                             in Sequence (UArr.fromList h)
                                    $ fln (chunkSize*2) (l-chunkSize) r
            | otherwise  = SoloChunk 0 $ UArr.fromList ns
-  fromList ns = fromListN (length ns) ns
+  fromList = fln minimumChunkSize
+   where fln chunkSize ns
+           | null r     = SoloChunk 0 $ UArr.fromList ns
+           | otherwise  = Sequence (UArr.fromList h)
+                               $ fln (chunkSize*2) r
+          where (h,r) = splitAt chunkSize ns
   toList = tl minimumChunkSize
    where tl _ (SoloChunk o c) = replicate o 0 ++ toList c
          tl chunkSize (Sequence h r)
