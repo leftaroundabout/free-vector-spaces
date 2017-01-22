@@ -23,7 +23,7 @@ module Data.VectorSpace.Free (
                              , V3
                              , V4
                              -- ** Arbitrary dimension
-                             , FinSuppSeq
+                             , Sequence, FinSuppSeq
                              -- * The vector-space type classes
                              -- ** General
                              -- | These come from the <http://hackage.haskell.org/package/vector-space/ vector-space> package.
@@ -38,6 +38,7 @@ module Data.VectorSpace.Free (
 import Data.AffineSpace
 import Data.VectorSpace
 import Data.VectorSpace.Free.FiniteSupportedSequence (FinSuppSeq)
+import Data.VectorSpace.Free.Sequence (Sequence)
 import Data.Basis
 
 import Data.MemoTrie
