@@ -74,9 +74,9 @@ mapSequence f (SoloChunk i₀ chunk) = SoloChunk i₀ (UArr.map f chunk)
 mapSequence f (Sequence hd rm) = Sequence (UArr.map f hd) (mapSequence f rm)
 
 {-# INLINE liftU2Seq #-}
-liftU2Seq :: UArr.Unbox n => Int -> (n -> n -> n) -> Sequence n -> Sequence n -> Sequence n
-liftU2Seq chunkSize f (Sequence hu ru) (Sequence hv rv)
-  = (`Sequence`liftU2Seq (chunkSize*2) f ru rv) $ case compare lu lv of
+liftU2Seq :: UArr.Unbox n => n -> (n -> n -> n) -> Sequence n -> Sequence n -> Sequence n
+liftU2Seq defaultVal f (Sequence hu ru) (Sequence hv rv)
+  = (`Sequence`liftU2Seq defaultVal f ru rv) $ case compare lu lv of
 -- Adapted from:
 -- http://hackage.haskell.org/package/linear-1.20.5/docs/src/Linear.Vector.html#line-200 
     LT | lu == 0   -> hv
@@ -92,6 +92,54 @@ liftU2Seq chunkSize f (Sequence hu ru) (Sequence hv rv)
                                                (UArr.unsafeIndex hv i)) hu
  where lu = UArr.length hu
        lv = UArr.length hv
+liftU2Seq defaultVal f (Sequence hu ru) (SoloChunk ov cv)
+   | lu == 0, lv == 0  = Sequence UArr.empty ru
+   | lu == 0      = Sequence (UArr.replicate ov defaultVal UArr.++ cv) ru
+   | lv == 0      = Sequence hu ru
+   | lu >= lv+ov  = Sequence (UArr.modify
+                                (\w -> Foldable.forM_ [0..lv-1] $
+                                   \i -> MArr.unsafeWrite w (i+ov)
+                                            $ f (UArr.unsafeIndex hu (i+ov))
+                                                (UArr.unsafeIndex cv i)) hu)
+                             ru
+   | ov == 0      = Sequence (UArr.modify
+                                (\w -> Foldable.forM_ [0..lu-1] $
+                                   \i -> MArr.unsafeWrite w i
+                                            $ f (UArr.unsafeIndex hu i)
+                                                (UArr.unsafeIndex cv i)) cv)
+                             ru
+   | otherwise    = Sequence (UArr.take ov hu UArr.++ UArr.modify
+                                (\w -> Foldable.forM_ [ov..lu-1] $
+                                   \i -> MArr.unsafeWrite w i
+                                            $ f (UArr.unsafeIndex hu i)
+                                                (UArr.unsafeIndex cv (i-ov))) cv)
+                             ru
+ where lu = UArr.length hu
+       lv = UArr.length cv
+liftU2Seq defaultVal f (SoloChunk ou cu) (Sequence hv rv)
+   | lu == 0, lv == 0  = Sequence UArr.empty rv
+   | lu == 0      = Sequence hv rv
+   | lv == 0      = Sequence (UArr.replicate ou defaultVal UArr.++ cu) rv
+   | lu+ou <= lv  = Sequence (UArr.modify
+                                (\w -> Foldable.forM_ [0..lu-1] $
+                                   \i -> MArr.unsafeWrite w (i+ou)
+                                            $ f (UArr.unsafeIndex cu i)
+                                                (UArr.unsafeIndex hv (i+ou))) hv)
+                             rv
+   | ou == 0      = Sequence (UArr.modify
+                                (\w -> Foldable.forM_ [0..lv-1] $
+                                   \i -> MArr.unsafeWrite w i
+                                            $ f (UArr.unsafeIndex cu i)
+                                                (UArr.unsafeIndex hv i)) cu)
+                             rv
+   | otherwise    = Sequence (UArr.take ou hv UArr.++ UArr.modify
+                                (\w -> Foldable.forM_ [ou..lv-1] $
+                                   \i -> MArr.unsafeWrite w i
+                                            $ f (UArr.unsafeIndex cu (i-ou))
+                                                (UArr.unsafeIndex hv i)) cu)
+                             rv
+ where lu = UArr.length cu
+       lv = UArr.length hv
 liftU2Seq _ f (SoloChunk ou cu) (SoloChunk ov cv)
    | lu == 0  = SoloChunk ov cv
    | lv == 0  = SoloChunk ou cu
@@ -105,6 +153,16 @@ liftU2Seq _ f (SoloChunk ou cu) (SoloChunk ov cv)
            (\ w -> Foldable.forM_ [0..lv-1] $
                 \i -> MArr.unsafeWrite w i $ f (UArr.unsafeIndex cu (i-δo))
                                                (UArr.unsafeIndex cv i)) cu
+   | ou >= ov
+        = SoloChunk ov $ UArr.take δo cv UArr.++ UArr.modify
+           (\ w -> Foldable.forM_ [δo..lv-1] $
+                \i -> MArr.unsafeWrite w i $ f (UArr.unsafeIndex cu (i-δo))
+                                               (UArr.unsafeIndex cv i)) cu
+   | ou <= ov
+        = SoloChunk ou $ UArr.take (-δo) cu UArr.++ UArr.modify
+           (\ w -> Foldable.forM_ [-δo..lu-1] $
+                \i -> MArr.unsafeWrite w i $ f (UArr.unsafeIndex cu i)
+                                               (UArr.unsafeIndex cv (i+δo))) cv
  where lu = UArr.length cu
        lv = UArr.length cv
        δo = ou-ov
