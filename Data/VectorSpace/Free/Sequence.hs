@@ -12,9 +12,11 @@
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE CPP                     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE StandaloneDeriving      #-}
+{-# LANGUAGE DeriveFunctor           #-}
 
 module Data.VectorSpace.Free.Sequence (
-                             Sequence (..)
+                             Sequence, BoxSequence, GSequence (..), minimumChunkSize
                              ) where
 
 import Data.VectorSpace.Free.FiniteSupportedSequence
@@ -25,7 +27,9 @@ import Data.Basis
 
 import qualified Data.Foldable as Foldable
 
+import qualified Data.Vector as Arr
 import qualified Data.Vector.Unboxed as UArr
+import qualified Data.Vector.Generic as GArr
 import qualified Data.Vector.Generic.Mutable as MArr
 
 import GHC.Exts (IsList(..))
@@ -39,22 +43,31 @@ import GHC.Exts (IsList(..))
 --   but element-strict arrays.
 -- 
 --   This space is dual to 'FinSuppSeq', which is completely strict.
-data Sequence n
+data GSequence array n
     = Sequence {
-        sequenceHeads :: !(UArr.Vector n)
+        sequenceHeads :: !(array n)
             -- ^ Length must be at most 'minimumChunkSize' in the outer constructor and
             --   double in each deeper layer. (Specification subject to future change!)
             --   If the length at depth 𝑑 is less than 2^𝑑, the remaining entries are
             --   treated as zeroes.
-      , sequenceRemain :: Sequence n
+      , sequenceRemain :: GSequence array n
       }
     | SoloChunk {
         chunkOffset :: !Int
-      , soloChunk :: !(UArr.Vector n)
+      , soloChunk :: !(array n)
             -- ^ Length plus offset must be at most 'minimumChunkSize' if this is
             --   the outer constructor and can double in each deeper layer.
       }
     
+
+type Sequence = GSequence UArr.Vector
+type BoxSequence = GSequence Arr.Vector
+
+deriving instance Functor BoxSequence
+
+reboxSequence :: (GArr.Vector a n, GArr.Vector b n) => GSequence a n -> GSequence b n
+reboxSequence (SoloChunk o c) = SoloChunk o $ Arr.convert c
+reboxSequence (Sequence h r) = Sequence (Arr.convert h) $ reboxSequence r
 
 mapSequence :: (UArr.Unbox n, UArr.Unbox m) => (n -> m) -> Sequence n -> Sequence m
 mapSequence f (SoloChunk i₀ chunk) = SoloChunk i₀ (UArr.map f chunk)
