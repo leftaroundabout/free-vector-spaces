@@ -12,9 +12,11 @@
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE CPP                     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE MultiWayIf              #-}
 
 module Data.VectorSpace.Free.FiniteSupportedSequence (
-                             FinSuppSeq (..)
+                               FinSuppSeq (..)
+                             , SparseSuppSeq (..)
                              ) where
 
 import Data.AffineSpace
@@ -23,11 +25,13 @@ import Data.Basis
 
 import qualified Data.Foldable as Foldable
 
+import qualified Data.Vector.Generic as Arr
 import qualified Data.Vector.Unboxed as UArr
 import qualified Data.Vector.Generic.Mutable as MArr
 
 import GHC.Exts (IsList(..))
 
+import Control.Arrow (second)
 
 
 
@@ -106,3 +110,71 @@ instance UArr.Unbox n => IsList (FinSuppSeq n) where
 
 instance (UArr.Unbox n, Show n) => Show (FinSuppSeq n) where
   show = ("fromList "++) . show . toList
+
+
+
+
+
+data SparseSuppSeq n = SparseSuppSeq {
+       sparseNonzeroes :: UArr.Vector (Int,n)
+     }
+
+instance (Num n, UArr.Unbox n) => AffineSpace (SparseSuppSeq n) where
+  type Diff (SparseSuppSeq n) = SparseSuppSeq n
+  (.-.) = (^-^)
+  (.+^) = (^+^)
+  
+instance (Num n, UArr.Unbox n) => AdditiveGroup (SparseSuppSeq n) where
+  zeroV = SparseSuppSeq $ UArr.empty
+  SparseSuppSeq u ^+^ SparseSuppSeq v = SparseSuppSeq w
+   where w = Arr.unfoldrN (Arr.length u + Arr.length v) seekws (0,0)
+         seekws (pu,pv) = case (u Arr.!? pu, v Arr.!? pv) of
+                     (Just (ju,uj), Just (jv,vj))
+                       -> if | ju>jv     -> Just ((jv, vj), (pu, pv+1))
+                             | ju<jv     -> Just ((ju, uj), (pu+1, pv))
+                             | otherwise -> Just ((ju, uj+vj), (pu+1, pv+1))
+                     (Just (ju,uj), Nothing)
+                                         -> Just ((ju, uj), (pu+1, pv))
+                     (Nothing, Just (jv,vj))
+                                         -> Just ((jv, vj), (pu, pv+1))
+                     (Nothing, Nothing)  -> Nothing
+  negateV (SparseSuppSeq v) = SparseSuppSeq (Arr.map (second negate) v)
+
+instance (UArr.Unbox n, Eq n, Num n) => IsList (SparseSuppSeq n) where
+  type Item (SparseSuppSeq n) = n
+  fromListN n xs = SparseSuppSeq $ Arr.unfoldrN n go (0,xs)
+   where go (_,[]) = Nothing
+         go (j,0:xs) = go (j+1,xs)
+         go (j,x:xs) = Just ((j,x), (j+1,xs))
+  fromList l = fromListN (length l) l
+  toList (SparseSuppSeq xs) = go 0 0
+   where go i j = case xs Arr.!? j of
+              Just (i',x) | i==i'  -> x : go (i+1) (j+1)
+              Nothing              -> []
+              _                    -> 0 : go (i+1) j
+
+
+
+
+data SemisparseSuppSeq n = SemisparseSuppSeq {
+       chunkSparseNonzeroes :: UArr.Vector n
+     , sparseNonzeroLocation :: UArr.Vector (Int, Int)
+                                        -- ^ Start index of block,
+                                        --        size of block of consecutive nonzeroes
+     }
+     
+instance (Num n, UArr.Unbox n) => AffineSpace (SemisparseSuppSeq n) where
+  type Diff (SemisparseSuppSeq n) = SemisparseSuppSeq n
+  (.-.) = (^-^)
+  (.+^) = (^+^)
+  
+instance (Num n, UArr.Unbox n) => AdditiveGroup (SemisparseSuppSeq n) where
+  zeroV = SemisparseSuppSeq UArr.empty UArr.empty
+  SemisparseSuppSeq u uis ^+^ SemisparseSuppSeq v vis = SemisparseSuppSeq w wis
+   where w = Arr.unfoldrN (Arr.length u + Arr.length v) seekws (0,(0,0))
+         wis = undefined
+         seekws (i,(pu,pv)) = case (uis Arr.!? pu, vis Arr.!? pv) of
+                     (Just (ju,lju), Just (jv,ljv))
+                       -> if ju > i && jv > i
+                           then  undefined else undefined
+  negateV (SemisparseSuppSeq v vis) = SemisparseSuppSeq (Arr.map negate v) vis
