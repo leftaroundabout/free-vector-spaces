@@ -32,11 +32,13 @@ module Data.VectorSpace.Free (
                              -- ** Small
                              , OneDimensional(..)
                              -- ** Free
+                             , FreeVectorSpace(..)
                              , FiniteFreeSpace(..)
                              ) where
 
 import Data.AffineSpace
 import Data.VectorSpace
+import Data.VectorSpace.Free.Class
 import Data.VectorSpace.Free.FiniteSupportedSequence (FinSuppSeq)
 import Data.VectorSpace.Free.Sequence (Sequence)
 import Data.Basis

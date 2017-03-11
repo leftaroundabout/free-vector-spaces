@@ -21,6 +21,7 @@ module Data.VectorSpace.Free.FiniteSupportedSequence (
 
 import Data.AffineSpace
 import Data.VectorSpace
+import Data.VectorSpace.Free.Class
 import Data.Basis
 
 import qualified Data.Foldable as Foldable
@@ -31,7 +32,7 @@ import qualified Data.Vector.Generic.Mutable as MArr
 
 import GHC.Exts (IsList(..))
 
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 
 
 
@@ -93,6 +94,10 @@ instance (Num n, UArr.Unbox n) => VectorSpace (FinSuppSeq n) where
   type Scalar (FinSuppSeq n) = n
   μ*^FinSuppSeq v = FinSuppSeq $ UArr.map (μ*) v
   
+instance (Num n, AdditiveGroup n, UArr.Unbox n) => FreeVectorSpace (FinSuppSeq n) where
+  FinSuppSeq v^*^FinSuppSeq w = FinSuppSeq (UArr.zipWith (*) v w)
+  vmap f (FinSuppSeq v) = FinSuppSeq $ UArr.map f v
+
 instance (Num n, AdditiveGroup n, UArr.Unbox n) => InnerSpace (FinSuppSeq n) where
   FinSuppSeq v<.>FinSuppSeq w = UArr.sum (UArr.zipWith (*) v w)
 
@@ -138,7 +143,38 @@ instance (Num n, UArr.Unbox n) => AdditiveGroup (SparseSuppSeq n) where
                      (Nothing, Just (jv,vj))
                                          -> Just ((jv, vj), (pu, pv+1))
                      (Nothing, Nothing)  -> Nothing
-  negateV (SparseSuppSeq v) = SparseSuppSeq (Arr.map (second negate) v)
+  negateV (SparseSuppSeq v) = SparseSuppSeq $ Arr.map (second negate) v
+
+instance (Num n, UArr.Unbox n) => VectorSpace (SparseSuppSeq n) where
+  type Scalar (SparseSuppSeq n) = n
+  μ *^ SparseSuppSeq v = SparseSuppSeq $ Arr.map (second (*μ)) v
+
+instance (Num n, UArr.Unbox n) => FreeVectorSpace (SparseSuppSeq n) where
+  SparseSuppSeq u ^*^ SparseSuppSeq v = SparseSuppSeq w
+   where w = Arr.unfoldrN (Arr.length u `min` Arr.length v) seekws (0,0)
+         seekws (pu,pv) = case (u Arr.!? pu, v Arr.!? pv) of
+                     (Just (ju,uj), Just (jv,vj))
+                       -> if | ju>jv     -> seekws (pu, pv+1)
+                             | ju<jv     -> seekws (pu+1, pv)
+                             | otherwise -> Just ((ju, uj*vj), (pu+1, pv+1))
+                     _ -> Nothing
+  vmap f (SparseSuppSeq v) = SparseSuppSeq $ Arr.map (second f) v
+
+instance (Num n, AdditiveGroup n, UArr.Unbox n) => InnerSpace (SparseSuppSeq n) where
+  v <.> w = case v ^*^ w of SparseSuppSeq vw -> Arr.foldl' (\acc (_,q) -> acc+q) 0 vw
+
+instance (Num n, UArr.Unbox n) => HasBasis (SparseSuppSeq n) where
+  type Basis (SparseSuppSeq n) = Int
+  basisValue i = SparseSuppSeq $ UArr.singleton (i,1)
+  decompose (SparseSuppSeq v) = UArr.toList v
+  decompose' (SparseSuppSeq v) i = goBisect 0 (Arr.length v)
+   where goBisect jb jt
+           | jb==jt     = 0
+           | otherwise  = case first (`compare`i) $ v Arr.! jm of
+                            (LT,_) -> goBisect (jm+1) jt
+                            (EQ,q) -> q
+                            (GT,_) -> goBisect jb jm
+          where jm = (jb+jt)`div`2
 
 instance (UArr.Unbox n, Eq n, Num n) => IsList (SparseSuppSeq n) where
   type Item (SparseSuppSeq n) = n
