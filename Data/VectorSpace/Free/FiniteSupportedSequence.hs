@@ -123,6 +123,9 @@ instance (UArr.Unbox n, Show n) => Show (FinSuppSeq n) where
 
 
 
+-- | Sparsely supported sequences (what other languages would call /sparse vectors/)
+--   are sequences consisting of lots of zeroes, with finitely many
+--   nonzeroes scattered around. Only these nonzero elements are stored.
 data SparseSuppSeq n = SparseSuppSeq {
        sparseNonzeroes :: UArr.Vector (Int,n)
      }
@@ -195,6 +198,15 @@ instance (UArr.Unbox n, Eq n, Num n) => IsList (SparseSuppSeq n) where
 
 
 
+-- | Like 'SparseSuppSeq', this type of number-sequence ignores zeroes and only stores
+--   nonzero elements with positional information, but it does this not for every single
+--   entry separately: only the first position of each contiguous /chunk/ of nonzeroes
+--   is tracked. It is thus more suited for vectors that are in some places dense
+--   but still have lots of zeroes.
+-- 
+--   The drawback is that random access (i.e. 'decompose'') has complexity 𝓞(𝑛)
+--    – instead of 𝓞(1) for 'FinSuppSeq', or 𝓞(log 𝑛) for 'SparseSuppSeq' –
+--   so this type should only be used for “abstract vector operations”.
 data SemisparseSuppSeq n = SemisparseSuppSeq {
        chunkSparseNonzeroes :: UArr.Vector n
      , sparseNonzeroLocation :: UArr.Vector (Int, Int)
