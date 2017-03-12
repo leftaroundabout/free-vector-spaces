@@ -13,6 +13,8 @@
 {-# LANGUAGE CPP                     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE MultiWayIf              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE UnicodeSyntax           #-}
 
 module Data.VectorSpace.Free.FiniteSupportedSequence (
                                FinSuppSeq (..)
@@ -33,6 +35,7 @@ import qualified Data.Vector.Generic.Mutable as MArr
 import GHC.Exts (IsList(..))
 
 import Control.Arrow (first, second)
+import Control.Monad (forM_)
 
 
 
@@ -199,6 +202,28 @@ data SemisparseSuppSeq n = SemisparseSuppSeq {
                                         --        size of block of consecutive nonzeroes
      }
      
+
+asSemisparse :: UArr.Unbox n => SparseSuppSeq n -> SemisparseSuppSeq n
+asSemisparse (SparseSuppSeq v) = SemisparseSuppSeq (Arr.map snd v)
+                                    $ Arr.unfoldrN (Arr.length v) mkIndex 0
+ where mkIndex :: Int -> Maybe ((Int, Int), Int)
+       mkIndex i
+        | Just (j,_) <- v Arr.!? i  = case mkIndex $ i+1 of
+            Just ((j',l),n) | j'==j+1  -> Just ((j,l+1), n)
+            _                          -> Just ((j,1), i+1)
+        | otherwise  = Nothing
+
+fromSemisparse :: ∀ n . UArr.Unbox n => SemisparseSuppSeq n -> SparseSuppSeq n
+fromSemisparse (SemisparseSuppSeq v ssIx) = SparseSuppSeq . (`Arr.zip`v) $ Arr.create (do
+         ix <- MArr.new $ Arr.length v
+         Arr.foldM_ (\i (j,l) -> do
+                       forM_ [0..l-1] -- TODO: faster loop and unsafeWrite
+                         $ \k -> MArr.write ix (i+k) (j+k)
+                       return $ i+l
+                    ) 0 ssIx
+         return ix
+     )
+
 instance (Num n, UArr.Unbox n) => AffineSpace (SemisparseSuppSeq n) where
   type Diff (SemisparseSuppSeq n) = SemisparseSuppSeq n
   (.-.) = (^-^)
@@ -206,11 +231,30 @@ instance (Num n, UArr.Unbox n) => AffineSpace (SemisparseSuppSeq n) where
   
 instance (Num n, UArr.Unbox n) => AdditiveGroup (SemisparseSuppSeq n) where
   zeroV = SemisparseSuppSeq UArr.empty UArr.empty
-  SemisparseSuppSeq u uis ^+^ SemisparseSuppSeq v vis = SemisparseSuppSeq w wis
-   where w = Arr.unfoldrN (Arr.length u + Arr.length v) seekws (0,(0,0))
-         wis = undefined
-         seekws (i,(pu,pv)) = case (uis Arr.!? pu, vis Arr.!? pv) of
-                     (Just (ju,lju), Just (jv,ljv))
-                       -> if ju > i && jv > i
-                           then  undefined else undefined
+  u ^+^ v =  -- TODO: faster, direct implementation
+     asSemisparse $ fromSemisparse u ^+^ fromSemisparse v
   negateV (SemisparseSuppSeq v vis) = SemisparseSuppSeq (Arr.map negate v) vis
+  
+instance (Num n, UArr.Unbox n) => VectorSpace (SemisparseSuppSeq n) where
+  type Scalar (SemisparseSuppSeq n) = n
+  μ *^ SemisparseSuppSeq v ix = SemisparseSuppSeq (Arr.map (μ*) v) ix
+
+instance (Num n, UArr.Unbox n) => FreeVectorSpace (SemisparseSuppSeq n) where
+  u ^*^ v =  -- TODO: faster, direct implementation
+      asSemisparse $ fromSemisparse u ^*^ fromSemisparse v
+  vmap f (SemisparseSuppSeq v ix) = SemisparseSuppSeq (Arr.map f v) ix
+
+instance (Num n, AdditiveGroup n, UArr.Unbox n) => InnerSpace (SemisparseSuppSeq n) where
+  v <.> w = fromSemisparse v <.> fromSemisparse w
+
+instance (Num n, UArr.Unbox n) => HasBasis (SemisparseSuppSeq n) where
+  type Basis (SemisparseSuppSeq n) = Int
+  basisValue i = SemisparseSuppSeq (UArr.singleton 1) (UArr.singleton (i,1))
+  decompose = decompose . fromSemisparse
+  decompose' v = decompose' $ fromSemisparse v
+
+instance (UArr.Unbox n, Eq n, Num n) => IsList (SemisparseSuppSeq n) where
+  type Item (SemisparseSuppSeq n) = n
+  fromListN n = asSemisparse . fromListN n
+  fromList = asSemisparse . fromList
+  toList = toList . fromSemisparse
