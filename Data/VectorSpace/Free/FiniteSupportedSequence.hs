@@ -19,6 +19,7 @@
 module Data.VectorSpace.Free.FiniteSupportedSequence (
                                FinSuppSeq (..)
                              , SparseSuppSeq (..)
+                             , SemisparseSuppSeq (..)
                              ) where
 
 import Data.AffineSpace
