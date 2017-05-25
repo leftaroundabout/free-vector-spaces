@@ -8,10 +8,13 @@
 -- Portability : portable
 -- 
 {-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE CPP                     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
 
 module Data.VectorSpace.Free (
                              -- * Supported types
@@ -64,6 +67,8 @@ import Data.Ratio
 import Foreign.C.Types (CFloat, CDouble)
 
 import GHC.Exts (IsList(..))
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
 
 vDecomp :: FoldableWithIndex (L.E v) v => v s -> [(L.E v, s)]
 vDecomp = ifoldr (\b s l -> (b,s):l) []
@@ -173,10 +178,22 @@ instance (Eq r, Fractional r) => OneDimensional (V1 r) where
 
 
 class (VectorSpace v, Num (Scalar v)) => FiniteFreeSpace v where
-  {-# MINIMAL freeDimension, toFullUnboxVect, unsafeFromFullUnboxVect #-}
   freeDimension :: Functor p => p v -> Int
+  default freeDimension :: (Generic v, FiniteFreeSpace (Gnrx.Rep v ()))
+                        => p v -> Int
+  freeDimension _ = freeDimension ([]::[Gnrx.Rep v ()])
   toFullUnboxVect :: UArr.Unbox (Scalar v) => v -> UArr.Vector (Scalar v)
+  default toFullUnboxVect
+        :: ( Generic v, FiniteFreeSpace (Gnrx.Rep v ())
+           , UArr.Unbox (Scalar (Gnrx.Rep v ())) )
+                           => v -> UArr.Vector (Scalar (Gnrx.Rep v ()))
+  toFullUnboxVect v = toFullUnboxVect (Gnrx.from v :: Gnrx.Rep v ())
   unsafeFromFullUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
+  default unsafeFromFullUnboxVect
+        :: ( Generic v, FiniteFreeSpace (Gnrx.Rep v ())
+           , UArr.Unbox (Scalar (Gnrx.Rep v ())) )
+                           => UArr.Vector (Scalar (Gnrx.Rep v ())) -> v
+  unsafeFromFullUnboxVect v = Gnrx.to (unsafeFromFullUnboxVect v :: Gnrx.Rep v ())
   fromUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
   fromUnboxVect v = result
    where result = case UArr.length v of
@@ -237,3 +254,23 @@ instance Num s => FiniteFreeSpace (V4 s) where
 
 
 
+
+instance FiniteFreeSpace a => FiniteFreeSpace (Gnrx.Rec0 a s) where
+  freeDimension = freeDimension . fmap Gnrx.unK1
+  toFullUnboxVect = toFullUnboxVect . Gnrx.unK1
+  unsafeFromFullUnboxVect = Gnrx.K1 . unsafeFromFullUnboxVect
+  fromUnboxVect = Gnrx.K1 . fromUnboxVect
+instance FiniteFreeSpace (f p) => FiniteFreeSpace (Gnrx.M1 i c f p) where
+  freeDimension = freeDimension . fmap Gnrx.unM1
+  toFullUnboxVect = toFullUnboxVect . Gnrx.unM1
+  unsafeFromFullUnboxVect = Gnrx.M1 . unsafeFromFullUnboxVect
+  fromUnboxVect = Gnrx.M1 . fromUnboxVect
+instance (FiniteFreeSpace (f p), FiniteFreeSpace (g p), Scalar (f p) ~ Scalar (g p))
+              => FiniteFreeSpace ((f :*: g) p) where
+  freeDimension p = freeDimension (fmap (\(x:*:_)->x) p)
+                   + freeDimension (fmap (\(_:*:y)->y) p)
+  toFullUnboxVect (u:*:v) = toFullUnboxVect u UArr.++ toFullUnboxVect v
+  unsafeFromFullUnboxVect uv = u:*:v
+   where u = unsafeFromFullUnboxVect uv
+         v = unsafeFromFullUnboxVect $ UArr.drop du uv
+         du = freeDimension [u]
