@@ -144,6 +144,9 @@ infixr 7 ^/^, ^/!
 class (VectorSpace v, Fractional (Scalar v)) => OneDimensional v where
   -- | Compare the (directed) length of two vectors.
   (^/^) :: v -> v -> Maybe (Scalar v)
+  default (^/^) :: (Generic v, OneDimensional (Gnrx.Rep v ()))
+                     => v -> v -> Maybe (Scalar (Gnrx.Rep v ()))
+  v ^/^ w = (Gnrx.from v :: Gnrx.Rep v ()) ^/^ Gnrx.from w
   -- | Unsafe version of '^/^'.
   (^/!) :: v -> v -> Scalar v
   v^/!w = case v^/^w of
@@ -274,3 +277,13 @@ instance (FiniteFreeSpace (f p), FiniteFreeSpace (g p), Scalar (f p) ~ Scalar (g
    where u = unsafeFromFullUnboxVect uv
          v = unsafeFromFullUnboxVect $ UArr.drop du uv
          du = freeDimension [u]
+
+
+
+
+instance OneDimensional a => OneDimensional (Gnrx.Rec0 a s) where
+  Gnrx.K1 v ^/^ Gnrx.K1 w = v ^/^ w
+  Gnrx.K1 v ^/! Gnrx.K1 w = v ^/! w
+instance OneDimensional (f p) => OneDimensional (Gnrx.M1 i c f p) where
+  Gnrx.M1 v ^/^ Gnrx.M1 w = v ^/^ w
+  Gnrx.M1 v ^/! Gnrx.M1 w = v ^/! w
