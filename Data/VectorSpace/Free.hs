@@ -47,6 +47,7 @@ import Data.VectorSpace.Free.Sequence (Sequence)
 import Data.Basis
 
 import Data.MemoTrie
+import Data.Void
 
 import qualified Linear as L
 import Linear.V0
@@ -144,9 +145,10 @@ infixr 7 ^/^, ^/!
 class (VectorSpace v, Fractional (Scalar v)) => OneDimensional v where
   -- | Compare the (directed) length of two vectors.
   (^/^) :: v -> v -> Maybe (Scalar v)
-  default (^/^) :: (Generic v, OneDimensional (Gnrx.Rep v ()))
-                     => v -> v -> Maybe (Scalar (Gnrx.Rep v ()))
-  v ^/^ w = (Gnrx.from v :: Gnrx.Rep v ()) ^/^ Gnrx.from w
+  default (^/^) :: ( Generic v, OneDimensional (VRep v)
+                   , Scalar (VRep v) ~ Scalar v )
+                     => v -> v -> Maybe (Scalar v)
+  v ^/^ w = (Gnrx.from v :: VRep v) ^/^ Gnrx.from w
   -- | Unsafe version of '^/^'.
   (^/!) :: v -> v -> Scalar v
   v^/!w = case v^/^w of
@@ -182,21 +184,23 @@ instance (Eq r, Fractional r) => OneDimensional (V1 r) where
 
 class (VectorSpace v, Num (Scalar v)) => FiniteFreeSpace v where
   freeDimension :: Functor p => p v -> Int
-  default freeDimension :: (Generic v, FiniteFreeSpace (Gnrx.Rep v ()))
+  default freeDimension :: (Generic v, FiniteFreeSpace (VRep v))
                         => p v -> Int
-  freeDimension _ = freeDimension ([]::[Gnrx.Rep v ()])
+  freeDimension _ = freeDimension ([]::[VRep v])
   toFullUnboxVect :: UArr.Unbox (Scalar v) => v -> UArr.Vector (Scalar v)
   default toFullUnboxVect
-        :: ( Generic v, FiniteFreeSpace (Gnrx.Rep v ())
-           , UArr.Unbox (Scalar (Gnrx.Rep v ())) )
-                           => v -> UArr.Vector (Scalar (Gnrx.Rep v ()))
-  toFullUnboxVect v = toFullUnboxVect (Gnrx.from v :: Gnrx.Rep v ())
+        :: ( Generic v, FiniteFreeSpace (VRep v)
+           , UArr.Unbox (Scalar v)
+           , Scalar (VRep v) ~ Scalar v )
+                           => v -> UArr.Vector (Scalar v)
+  toFullUnboxVect v = toFullUnboxVect (Gnrx.from v :: VRep v)
   unsafeFromFullUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
   default unsafeFromFullUnboxVect
-        :: ( Generic v, FiniteFreeSpace (Gnrx.Rep v ())
-           , UArr.Unbox (Scalar (Gnrx.Rep v ())) )
-                           => UArr.Vector (Scalar (Gnrx.Rep v ())) -> v
-  unsafeFromFullUnboxVect v = Gnrx.to (unsafeFromFullUnboxVect v :: Gnrx.Rep v ())
+        :: ( Generic v, FiniteFreeSpace (VRep v)
+           , UArr.Unbox (Scalar v)
+           , Scalar (VRep v) ~ Scalar v )
+                           => UArr.Vector (Scalar v) -> v
+  unsafeFromFullUnboxVect v = Gnrx.to (unsafeFromFullUnboxVect v :: VRep v)
   fromUnboxVect :: UArr.Unbox (Scalar v) => UArr.Vector (Scalar v) -> v
   fromUnboxVect v = result
    where result = case UArr.length v of
@@ -287,3 +291,6 @@ instance OneDimensional a => OneDimensional (Gnrx.Rec0 a s) where
 instance OneDimensional (f p) => OneDimensional (Gnrx.M1 i c f p) where
   Gnrx.M1 v ^/^ Gnrx.M1 w = v ^/^ w
   Gnrx.M1 v ^/! Gnrx.M1 w = v ^/! w
+
+
+type VRep v = Gnrx.Rep v Void
