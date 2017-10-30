@@ -41,6 +41,7 @@ module Data.VectorSpace.Free (
 
 import Data.AffineSpace
 import Data.VectorSpace
+import Data.Cross
 import Data.VectorSpace.Free.Class
 import Data.VectorSpace.Free.FiniteSupportedSequence (FinSuppSeq)
 import Data.VectorSpace.Free.Sequence (Sequence)
@@ -109,7 +110,15 @@ instance Num s => AffineSpace (LA.Point v s) where {  \
 portFinDP(V0)
 portFinDP(V1)
 portFinDP(V2)
+instance Num s => HasCross2 (V2 s) where
+  cross2 (V2 x y) = V2 (-y) x
+
 portFinDP(V3)
+instance Num s => HasCross3 (V3 s) where
+  V3 ax ay az `cross3` V3 bx by bz = V3 (ay * bz - az * by)
+                                        (az * bx - ax * bz)
+                                        (ax * by - ay * bx)
+
 portFinDP(V4)
 
 
