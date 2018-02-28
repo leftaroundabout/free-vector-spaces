@@ -72,6 +72,8 @@ import GHC.Exts (IsList(..))
 import qualified GHC.Generics as Gnrx
 import GHC.Generics (Generic, (:*:)(..))
 
+import qualified Text.Show.Pragmatic as SP
+
 vDecomp :: FoldableWithIndex (L.E v) v => v s -> [(L.E v, s)]
 vDecomp = ifoldr (\b s l -> (b,s):l) []
 
@@ -147,6 +149,46 @@ instance HasTrie (L.E V4) where
   trie f = V4T $ V4 (f L.ex) (f L.ey) (f L.ez) (f L.ew)
   untrie (V4T v) (L.E i) = v^.i
   enumerate (V4T (V4 x y z w)) = [(L.ex, x), (L.ey, y), (L.ez, z), (L.ew, w)]
+
+instance SP.Show (V0 Int) where showsPrec = showsPrec
+instance SP.Show (V1 Int) where showsPrec = showsPrec
+instance SP.Show (V2 Int) where showsPrec = showsPrec
+instance SP.Show (V3 Int) where showsPrec = showsPrec
+instance SP.Show (V4 Int) where showsPrec = showsPrec
+
+instance SP.Show (V0 Integer) where showsPrec = showsPrec
+instance SP.Show (V1 Integer) where showsPrec = showsPrec
+instance SP.Show (V2 Integer) where showsPrec = showsPrec
+instance SP.Show (V3 Integer) where showsPrec = showsPrec
+instance SP.Show (V4 Integer) where showsPrec = showsPrec
+
+instance SP.Show (V0 Float) where
+  show V0 = "V0"
+instance SP.Show (V1 Float) where
+  showsPrec p (V1 x) = showParen (p>9) $ ("V1 "++) . SP.showsPrec 10 x
+instance SP.Show (V2 Float) where
+  showsPrec p v = showParen (p>9) $ ("V2 "++).xs.(' ':).ys
+   where V2 xs ys = SP.showsPrecWithSharedPrecision abs 7 10 v
+instance SP.Show (V3 Float) where
+  showsPrec p v = showParen (p>9) $ ("V3 "++).xs.(' ':).ys.(' ':).zs
+   where V3 xs ys zs = SP.showsPrecWithSharedPrecision abs 7 10 v
+instance SP.Show (V4 Float) where
+  showsPrec p v = showParen (p>9) $ ("V4 "++).xs.(' ':).ys.(' ':).zs.(' ':).ws
+   where V4 xs ys zs ws = SP.showsPrecWithSharedPrecision abs 7 10 v
+
+instance SP.Show (V0 Double) where
+  show V0 = "V0"
+instance SP.Show (V1 Double) where
+  showsPrec p (V1 x) = showParen (p>9) $ ("V1 "++) . SP.showsPrec 10 x
+instance SP.Show (V2 Double) where
+  showsPrec p v = showParen (p>9) $ ("V2 "++).xs.(' ':).ys
+   where V2 xs ys = SP.showsPrecWithSharedPrecision abs 10 10 v
+instance SP.Show (V3 Double) where
+  showsPrec p v = showParen (p>9) $ ("V3 "++).xs.(' ':).ys.(' ':).zs
+   where V3 xs ys zs = SP.showsPrecWithSharedPrecision abs 10 10 v
+instance SP.Show (V4 Double) where
+  showsPrec p v = showParen (p>9) $ ("V4 "++).xs.(' ':).ys.(' ':).zs.(' ':).ws
+   where V4 xs ys zs ws = SP.showsPrecWithSharedPrecision abs 10 10 v
 
 
 infixr 7 ^/^, ^/!
