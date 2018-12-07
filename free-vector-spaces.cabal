@@ -53,7 +53,7 @@ library
   other-modules:       Data.VectorSpace.Free.Class
   -- other-extensions:    
   build-depends:       base >=4.6 && <5.1,
-                       vector-space >=0.11 && <0.13,
+                       vector-space >=0.11 && <0.16,
                        MemoTrie,
                        linear >=1.18 && <1.23,
                        lens >= 4 && < 5,
