@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                free-vector-spaces
-version:             0.1.5.0
+version:             0.1.5.1
 synopsis:            Instantiate the classes from the vector-space package with types from linear
 description:         The <http://hackage.haskell.org/package/linear/ linear> package offers efficient
                      vector types — where vector means /element of a free vector space/, i.e.
