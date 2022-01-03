@@ -56,7 +56,7 @@ library
                        vector-space >=0.11 && <0.18,
                        MemoTrie,
                        linear >=1.18 && <1.23,
-                       lens >= 4 && < 5,
+                       lens >= 4 && < 6,
                        vector,
                        pragmatic-show >=0.1.2 && <0.2
   ghc-options:         -O2

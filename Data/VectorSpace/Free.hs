@@ -58,7 +58,7 @@ import Linear.V3
 import Linear.V4
 import qualified Linear.Affine as LA
 
-import Control.Lens ((^.), FoldableWithIndex, ifoldr)
+import Control.Lens ((^.), FoldableWithIndex, ifoldr, Lens')
 
 import qualified Data.Foldable as Foldable
 
@@ -94,7 +94,7 @@ instance (Num s, AdditiveGroup s) => InnerSpace (v s) where { \
 instance (Num s, AdditiveGroup s) => HasBasis (v s) where {     \
   type Basis (v s) = L.E v;                                      \
   decompose = vDecomp;                                            \
-  basisValue = L.unit . L.el;                                      \
+  basisValue x = L.unit (L.el x :: Lens' (v s) s);                 \
   decompose' w (L.E le) = w^.le }
 
 portFinDV(V0)
