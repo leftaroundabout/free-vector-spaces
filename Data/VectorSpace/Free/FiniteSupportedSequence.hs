@@ -10,7 +10,6 @@
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE FlexibleContexts        #-}
-{-# LANGUAGE CPP                     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE MultiWayIf              #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
