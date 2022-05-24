@@ -48,9 +48,10 @@ source-repository head
 
 library
   exposed-modules:     Data.VectorSpace.Free
-                       , Data.VectorSpace.Free.FiniteSupportedSequence
-                       , Data.VectorSpace.Free.Sequence
-  other-modules:       Data.VectorSpace.Free.Class
+                      , Data.VectorSpace.Free.FiniteSupportedSequence
+                      , Data.VectorSpace.Free.Sequence
+  other-modules:        Data.VectorSpace.Free.Class
+                      , Data.VectorSpace.Free.TH
   -- other-extensions:    
   build-depends:       base >=4.6 && <5.1,
                        vector-space >=0.11 && <0.18,
@@ -58,7 +59,9 @@ library
                        linear >=1.18 && <1.23,
                        lens >= 4 && < 6,
                        vector,
-                       pragmatic-show >=0.1.2 && <0.2
+                       pragmatic-show >=0.1.2 && <0.2,
+                       template-haskell
   ghc-options:         -O2
   -- hs-source-dirs:      
   default-language:    Haskell2010
+  -- ghc-options: -cpp  -pgmPcpphs  -optP--cpps

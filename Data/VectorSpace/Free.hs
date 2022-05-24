@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE FlexibleContexts        #-}
-{-# LANGUAGE CPP                     #-}
+{-# LANGUAGE TemplateHaskell         #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
@@ -45,6 +45,7 @@ import Data.Cross
 import Data.VectorSpace.Free.Class
 import Data.VectorSpace.Free.FiniteSupportedSequence (FinSuppSeq)
 import Data.VectorSpace.Free.Sequence (Sequence)
+import Data.VectorSpace.Free.TH
 import Data.Basis
 
 import Data.MemoTrie
@@ -77,51 +78,61 @@ import qualified Text.Show.Pragmatic as SP
 vDecomp :: FoldableWithIndex (L.E v) v => v s -> [(L.E v, s)]
 vDecomp = ifoldr (\b s l -> (b,s):l) []
 
-#define portFinDV(v)                              \
-instance Num s => AffineSpace (v s) where {        \
-  type Diff (v s) = v s;                            \
-  (.-.) = (L.^-^);                                   \
-  (.+^) = (L.^+^) };                                  \
-instance Num s => AdditiveGroup (v s) where {          \
-  zeroV = L.zero;                                       \
-  (^+^) = (L.^+^);                                       \
-  negateV = L.negated };                                  \
-instance Num s => VectorSpace (v s) where {                \
-  type Scalar (v s) = s;                                    \
-  (*^) = (L.*^) };                                           \
-instance (Num s, AdditiveGroup s) => InnerSpace (v s) where { \
-  (<.>) = L.dot };                                             \
-instance (Num s, AdditiveGroup s) => HasBasis (v s) where {     \
-  type Basis (v s) = L.E v;                                      \
-  decompose = vDecomp;                                            \
-  basisValue x = L.unit (L.el x :: Lens' (v s) s);                 \
-  decompose' w (L.E le) = w^.le }
 
-portFinDV(V0)
-portFinDV(V1)
-portFinDV(V2)
-portFinDV(V3)
-portFinDV(V4)
 
-#define portFinDP(v)                                 \
-instance Num s => AffineSpace (LA.Point v s) where {  \
-  type Diff (LA.Point v s) = v s;                      \
-  (.-.) = (LA..-.);                                     \
-  (.+^) = (LA..+^) }
+-- #define portFinDV(v)                              \
+-- instance Num s => AffineSpace (v s) where {        \
+--   type Diff (v s) = v s;                            \
+--   (.-.) = (L.^-^);                                   \
+--   (.+^) = (L.^+^) };                                  \
+-- instance Num s => AdditiveGroup (v s) where {          \
+--   zeroV = L.zero;                                       \
+--   (^+^) = (L.^+^);                                       \
+--   negateV = L.negated };                                  \
+-- instance Num s => VectorSpace (v s) where {                \
+--   type Scalar (v s) = s;                                    \
+--   (*^) = (L.*^) };                                           \
+-- instance (Num s, AdditiveGroup s) => InnerSpace (v s) where { \
+--   (<.>) = L.dot };                                             \
+-- instance (Num s, AdditiveGroup s) => HasBasis (v s) where {     \
+--   type Basis (v s) = L.E v;                                      \
+--   decompose = vDecomp;                                            \
+--   basisValue x = L.unit (L.el x :: Lens' (v s) s);                 
+--   decompose' w (L.E le) = w^.le }
 
-portFinDP(V0)
-portFinDP(V1)
-portFinDP(V2)
+portFinDV ''V0
+portFinDV ''V1
+portFinDV ''V2
+portFinDV ''V3
+portFinDV ''V4
+
+
+-- portFinDP t = [d|
+--   instance Num s => AffineSpace (LA.Point $v s) where
+--     type Diff (LA.Point $v s) = $v s
+--     (.-.) = (LA..-.)
+--     (.+^) = (LA..+^) 
+--     |]
+--       where  v = litT ( strTyLit t )
+-- #define portFinDP(v)                                 \
+-- instance Num s => AffineSpace (LA.Point v s) where {  \
+--   type Diff (LA.Point v s) = v s;                      \
+--   (.-.) = (LA..-.);                                     \
+--   (.+^) = (LA..+^) }
+
+portFinDP ''V0
+portFinDP ''V1
+portFinDP ''V2
 instance Num s => HasCross2 (V2 s) where
   cross2 (V2 x y) = V2 (-y) x
 
-portFinDP(V3)
+portFinDP ''V3
 instance Num s => HasCross3 (V3 s) where
   V3 ax ay az `cross3` V3 bx by bz = V3 (ay * bz - az * by)
                                         (az * bx - ax * bz)
                                         (ax * by - ay * bx)
 
-portFinDP(V4)
+portFinDP ''V4
 
 
 instance HasTrie (L.E V0) where
