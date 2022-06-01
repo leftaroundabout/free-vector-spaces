@@ -10,6 +10,11 @@ import Control.Lens (Lens')
 import           Language.Haskell.TH
 import qualified Linear.Affine as LA
 
+-- | Generate 'VectorSpace' style instances from representable-functor ones.
+--   Intended mostly for use with the types 'L.V1' ... 'L.V4' etc..
+-- 
+--   This macro generates instances for the classes 'AffineSpace', 'AdditiveGroup',
+--   'VectorSpace', 'InnerSpace' and 'Basis'.
 portFinDV t = [d|
   instance Num s => AffineSpace ($v s) where      
     type Diff ($v s) = $v s                        
@@ -37,6 +42,7 @@ portFinDV t = [d|
   where
     v = conT t
 
+-- | Generate an 'AffineSpace' instance for the 'LA.Point' of a representable functor.
 portFinDP t = [d|
   instance Num s => AffineSpace (LA.Point $v s) where
     type Diff (LA.Point $v s) = $v s
